@@ -1,4 +1,4 @@
-/* nvd3 version 1.7.0(https://github.com/liquidpele/nvd3) 2014-12-18 */
+/* nvd3 version 1.7.0 (https://github.com/nvd3-community/nvd3) 2015-01-09 */
 (function(){
 
 // set up main nv object on window
