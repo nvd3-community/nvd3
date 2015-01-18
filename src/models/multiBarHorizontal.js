@@ -106,23 +106,27 @@ nv.models.multiBarHorizontal = function() {
                 .rangeBands(xRange || [0, availableHeight], groupSpacing);
 
             y.domain(yDomain || d3.extent(d3.merge(seriesData).map(function(d) {
+                var offsetMax = 0;
+                var offsetMin = 0;
+                if (!(d.yerr === undefined)){
                     var yerr = d.yerr.length ? d.yerr : [-Math.abs(d.yerr), Math.abs(d.yerr)];
-                    var yerrMax = Math.max.apply(null, yerr);
-                    var yerrMin = Math.min.apply(null, yerr);
-                    if (stacked){
-                        if (d.y > 0){
-                            return (d.y1 + d.y + (yerrMax > 0 ? yerrMax : 0))
-                        }else{
-                            return (d.y1 + (yerrMin < 0 ? yerrMin : 0))
-                        }
+                    offsetMax = Math.max.apply(null, yerr);
+                    offsetMin = Math.min.apply(null, yerr);
+                }
+                if (stacked){
+                    if (d.y > 0){
+                        return (d.y1 + d.y + (offsetMax > 0 ? offsetMax : 0))
                     }else{
-                        if (d.y > 0){
-                            return (d.y + (yerrMax > 0 ? yerrMax : 0))
-                        }else{
-                            return (d.y + (yerrMin < 0 ? yerrMin : 0))
-                        }
+                        return (d.y1 + (offsetMin < 0 ? offsetMin : 0))
                     }
-                }).concat(forceY)))
+                }else{
+                    if (d.y > 0){
+                        return (d.y + (offsetMax > 0 ? offsetMax : 0))
+                    }else{
+                        return (d.y + (offsetMin < 0 ? offsetMin : 0))
+                    }
+                }
+            }).concat(forceY)))
             var offsetRight = 0;
             var offsetLeft = 0;
             if (showValues && !stacked) {
@@ -132,6 +136,17 @@ nv.models.multiBarHorizontal = function() {
                     offsetLeft += valuePadding
             }
             y.range(yRange || [0 + offsetLeft, availableWidth - offsetRight]);
+
+            // If scale's domain don't have a range, slightly adjust to make one... so a chart can show a single data point
+            if (x.domain()[0] === x.domain()[1])
+                x.domain()[0] ?
+                    x.domain([x.domain()[0] - x.domain()[0] * 0.01, x.domain()[1] + x.domain()[1] * 0.01])
+                    : x.domain([-1,1]);
+
+                if (y.domain()[0] === y.domain()[1])
+                    y.domain()[0] ?
+                        y.domain([y.domain()[0] + y.domain()[0] * 0.01, y.domain()[1] - y.domain()[1] * 0.01])
+                        : y.domain([-1,1]);
 
             x0 = x0 || x;
             y0 = y0 || d3.scale.linear().domain(y.domain()).range([y(0),y(0)]);
@@ -279,10 +294,16 @@ nv.models.multiBarHorizontal = function() {
                     .select('text')
                     .attr('x', function(d,i) {
                         var yerr = getYerr(d,i)
-                        yerr = yerr.length ? yerr : [-Math.abs(yerr), Math.abs(yerr)];
-                        var yerrMax = Math.max.apply(null, yerr);
-                        var yerrMin = Math.min.apply(null, yerr);
-                        return getY(d,i) < 0 ? y(yerrMin) - y(0) - 5 : y(getY(d,i)) - y(0) + (y(yerrMax) - y(0)) + 5
+                        var shiftRight = 0;
+                        var shiftLeft = 0;
+                        if (!(yerr === undefined)){
+                            yerr = yerr.length ? yerr : [-Math.abs(yerr), Math.abs(yerr)];
+                            var yerrMax = Math.max.apply(null, yerr);
+                            var yerrMin = Math.min.apply(null, yerr);
+                            shiftRight = y(yerrMax) - y(0);
+                            shiftLeft = y(yerrMin) - y(0)
+                        }
+                        return getY(d,i) < 0 ? shiftLeft - 5 : y(getY(d,i)) - y(0) + shiftRight + 5
                     })
             } else {
                 bars.selectAll('text').text('');

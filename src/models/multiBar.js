@@ -107,22 +107,25 @@ nv.models.multiBar = function() {
                 .rangeBands(xRange || [0, availableWidth], groupSpacing);
 
             y.domain(yDomain || d3.extent(d3.merge(seriesData).map(function(d) {
-                    // return stacked ? (d.y > 0 ? d.y1 : d.y1 + d.y ) : d.y
+                var offsetMax = 0;
+                var offsetMin = 0;
+                if (!(d.xerr === undefined)){
                     var xerr = d.xerr.length ? d.xerr : [-Math.abs(d.xerr), Math.abs(d.xerr)];
-                    var xerrMax = Math.max.apply(null, xerr);
-                    var xerrMin = Math.min.apply(null, xerr);
-                    if (stacked){
-                        if (d.y > 0)
-                            return (d.y1 + (xerrMax > 0 ? xerrMax : 0))
-                        else
-                            return (d.y1 + d.y + (xerrMin < 0 ? xerrMin : 0))
-                    }else{
-                        if (d.y > 0)
-                            return (d.y + (xerrMax > 0 ? xerrMax : 0))
-                        else
-                            return (d.y + (xerrMin < 0 ? xerrMin : 0))
-                    }
-                }).concat(forceY)))
+                    offsetMax = Math.max.apply(null, xerr);
+                    offsetMin = Math.min.apply(null, xerr);
+                }
+                if (stacked){
+                    if (d.y > 0)
+                        return (d.y1 + (offsetMax > 0 ? offsetMax : 0))
+                    else
+                        return (d.y1 + d.y + (offsetMin < 0 ? offsetMin : 0))
+                }else{
+                    if (d.y > 0)
+                        return (d.y + (offsetMax > 0 ? offsetMax : 0))
+                    else
+                        return (d.y + (offsetMin < 0 ? offsetMin : 0))
+                }
+            }).concat(forceY)))
 
             var offsetTop = 0;
             var offsetBottom = 0;
@@ -134,9 +137,19 @@ nv.models.multiBar = function() {
                 }
             y.range(yRange || [availableHeight - offsetBottom, 0 + offsetTop]);
 
+            // If scale's domain don't have a range, slightly adjust to make one... so a chart can show a single data point
+            if (x.domain()[0] === x.domain()[1])
+                x.domain()[0] ?
+                    x.domain([x.domain()[0] - x.domain()[0] * 0.01, x.domain()[1] + x.domain()[1] * 0.01])
+                    : x.domain([-1,1]);
+
+            if (y.domain()[0] === y.domain()[1])
+                y.domain()[0] ?
+                    y.domain([y.domain()[0] + y.domain()[0] * 0.01, y.domain()[1] - y.domain()[1] * 0.01])
+                    : y.domain([-1,1]);
+
             x0 = x0 || x;
             y0 = y0 || d3.scale.linear().domain(y.domain()).range([y(0),y(0)]);
-
 
             // Setup containers and skeleton of chart
             var wrap = container.selectAll('g.nv-wrap.nv-multibar').data([data]);
@@ -280,12 +293,17 @@ nv.models.multiBar = function() {
                 bars.watchTransition(renderWatch, 'multibar')
                     .select('text')
                     .attr('x', function(d,i) {
-                        // return getY(d,i) < 0 ? y(getY(d,i)) - y(0) + 4 : 0 - 4
                         var xerr = getXerr(d,i)
-                        xerr = xerr.length ? xerr : [-Math.abs(xerr), Math.abs(xerr)];
-                        var xerrMax = Math.max.apply(null, xerr);
-                        var xerrMin = Math.min.apply(null, xerr);
-                        return getY(d,i) < 0 ? y(getY(d,i)) - y(0) + (y(xerrMin) - y(0)) + 5 : y(xerrMax) - y(0) - 5
+                        var shiftTop = 0;
+                        var shiftBottom = 0;
+                        if (!(xerr === undefined)){
+                            xerr = xerr.length ? xerr : [-Math.abs(xerr), Math.abs(xerr)];
+                            var xerrMax = Math.max.apply(null, xerr);
+                            var xerrMin = Math.min.apply(null, xerr);
+                            shiftTop = y(xerrMin) - y(0);
+                            shiftBottom = y(xerrMax) - y(0)
+                        }
+                        return getY(d,i) < 0 ? y(getY(d,i)) - y(0) + shiftBottom + 5 : shiftTop - 5
                     })
                     .attr('transform', 'rotate(90)')
             } else {
