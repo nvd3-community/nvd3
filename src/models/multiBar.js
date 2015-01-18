@@ -300,8 +300,8 @@ nv.models.multiBar = function() {
                             xerr = xerr.length ? xerr : [-Math.abs(xerr), Math.abs(xerr)];
                             var xerrMax = Math.max.apply(null, xerr);
                             var xerrMin = Math.min.apply(null, xerr);
-                            shiftBottom = y(xerrMin) - y(0);
-                            shiftTop = y(xerrMax) - y(0);
+                            shiftBottom = (y(xerrMin) - y(0)) > 0 ? y(xerrMin) - y(0) : 0;
+                            shiftTop = (y(xerrMax) - y(0)) < 0 ? y(xerrMax) - y(0) : 0;
                         }
                         return getY(d,i) < 0 ? y(getY(d,i)) - y(0) + shiftBottom + 5 : shiftTop - 5
                     })

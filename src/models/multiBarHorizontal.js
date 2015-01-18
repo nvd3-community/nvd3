@@ -300,8 +300,8 @@ nv.models.multiBarHorizontal = function() {
                             yerr = yerr.length ? yerr : [-Math.abs(yerr), Math.abs(yerr)];
                             var yerrMax = Math.max.apply(null, yerr);
                             var yerrMin = Math.min.apply(null, yerr);
-                            shiftRight = y(yerrMax) - y(0);
-                            shiftLeft = y(yerrMin) - y(0)
+                            shiftRight = (y(yerrMax) - y(0)) > 0 ? y(yerrMax) - y(0) : 0;
+                            shiftLeft = (y(yerrMin) - y(0) < 0 ? y(yerrMin) - y(0) : 0);
                         }
                         return getY(d,i) < 0 ? shiftLeft - 5 : y(getY(d,i)) - y(0) + shiftRight + 5
                     })
