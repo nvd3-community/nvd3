@@ -272,7 +272,7 @@ nv.models.multiBar = function() {
 
             if (showValues && !stacked) {
                 bars.select('text')
-                    .attr('text-anchor', function(d,i) { return getY(d,i) > 0 ? 'end' : 'start' })
+                    .attr('text-anchor', function(d,i) { return getY(d,i) < 0 ? 'start' : 'end' })
                     .attr('y', 0 - x.rangeBand() / (data.length * 2))
                     .attr('dy', '.32em')
                     .text(function(d,i) {
