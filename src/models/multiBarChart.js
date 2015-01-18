@@ -26,10 +26,11 @@ nv.models.multiBarChart = function() {
         , reduceXTicks = true // if false a tick will show for every data point
         , staggerLabels = false
         , rotateLabels = 0
+        , stacked = false
         , tooltips = true
         , tooltip = function(key, x, y, e, graph) {
-            return '<h3>' + key + '</h3>' +
-                '<p>' +  y + ' on ' + x + '</p>'
+            return '<h3>' + key + ' - ' + x + '</h3>' +
+                '<p>' +  y + '</p>'
         }
         , x //can be accessed via chart.xScale()
         , y //can be accessed via chart.yScale()
@@ -42,7 +43,7 @@ nv.models.multiBarChart = function() {
         ;
 
     state.stacked = false // DEPRECATED Maintained for backward compatibility
-    
+
     multibar
         .stacked(false)
     ;
@@ -170,7 +171,9 @@ nv.models.multiBarChart = function() {
             var g = wrap.select('g');
 
             gEnter.append('g').attr('class', 'nv-x nv-axis');
-            gEnter.append('g').attr('class', 'nv-y nv-axis');
+            gEnter.append('g').attr('class', 'nv-y nv-axis')
+                .append('g').attr('class', 'nv-zeroLine')
+                .append('line');
             gEnter.append('g').attr('class', 'nv-barsWrap');
             gEnter.append('g').attr('class', 'nv-legendWrap');
             gEnter.append('g').attr('class', 'nv-controlsWrap');
@@ -226,7 +229,7 @@ nv.models.multiBarChart = function() {
             var barsWrap = g.select('.nv-barsWrap')
                 .datum(data.filter(function(d) { return !d.disabled }));
 
-            barsWrap.call(multibar);
+            barsWrap.transition().call(multibar);
 
             // Setup Axes
             if (showXAxis) {

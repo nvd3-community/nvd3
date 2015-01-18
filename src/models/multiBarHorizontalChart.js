@@ -22,6 +22,10 @@ nv.models.multiBarHorizontalChart = function() {
         , showLegend = true
         , showXAxis = true
         , showYAxis = true
+        , rightAlignYAxis = false
+        , reduceXTicks = true // if false a tick will show for every data point
+        , staggerLabels = false
+        , rotateLabels = 0
         , stacked = false
         , tooltips = true
         , tooltip = function(key, x, y, e, graph) {
@@ -39,7 +43,7 @@ nv.models.multiBarHorizontalChart = function() {
         ;
 
     state.stacked = false; // DEPRECATED Maintained for backward compatibility
-    
+
     multibar
         .stacked(stacked)
     ;

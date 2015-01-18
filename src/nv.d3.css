@@ -294,6 +294,7 @@ svg.nvd3-svg {
   fill-opacity: 1;
 }
 
+.nvd3 .nv-multibar .nv-groups text,
 .nvd3 .nv-discretebar .nv-groups text,
 .nvd3 .nv-multibarHorizontal .nv-groups text {
   font-weight: bold;
