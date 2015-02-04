@@ -490,7 +490,7 @@ nv.models.linePlusBarChart = function() {
                 );
 
                 // Update Main (Focus) X Axis
-                if (dataBars.length) {
+                if (dataBars.length && leftAxisShowBars) {
                     x = bars.xScale();
                 } else {
                     x = lines.xScale();
