@@ -84,13 +84,30 @@ I'll do my best to review all pull requests within a few days.
 
 ## Building latest
 
-1. First clone the repository and checkout the "development" branch
-2. make sure nodejs is installed via your system's package manager.
-3. have node download it's required modules with:  npm install
-4. install grunt globally:  sudo npm install -g grunt
-5. build with:  grunt production
+### Initial development setup
 
-You should now have a "build" directory with the js and css files within.
+1. First clone the repository and checkout the "development" branch
+2. make sure `nodejs` is installed via your system's package manager
+3. install grunt globally:  `sudo npm install -g grunt`
+4. have node download nvd3-community's required modules with:  `npm install`
+5. install development environment modules with:  `bower install`
+
+### Testing
+
+Just run `grunt` with no arguments on the command line to create the
+combined `nv.d3.js` file and run all the unit tests:
+
+    $ grunt
+
+### Create a "Production" Release
+
+Just invoke `grunt production` to create the final `.js` and `.css` files:
+
+    $ grunt production
+
+You should now have a `build` directory containing the `nv.d3.js` and
+`nv.d3.css` files (normal and minified).
+
 
 ---
 
