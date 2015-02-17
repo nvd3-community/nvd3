@@ -21,9 +21,11 @@ nv.models.multiBarHorizontal = function() {
         , disabled // used in conjunction with barColor to communicate from multiBarHorizontalChart what series are disabled
         , stacked = false
         , showValues = false
-        , showBarLabels = false
-        , valuePadding = 60
+        , clipEdge = true
+        , stackOffset = 'zero' // options include 'silhouette', 'wiggle', 'expand', 'zero', or a custom function
+        , valuePadding = 80
         , groupSpacing = 0.1
+        , hideable = false
         , valueFormat = d3.format(',.2f')
         , delay = 1200
         , xDomain
@@ -49,9 +51,19 @@ nv.models.multiBarHorizontal = function() {
                 container = d3.select(this);
             nv.utils.initSVG(container);
 
+            if(hideable && data.length) hideable = [{
+                values: data[0].values.map(function(d) {
+                        return {
+                            x: d.x,
+                            y: 0,
+                            series: d.series,
+                            size: 0.01
+                        };}
+                )}];
+
             if (stacked)
                 data = d3.layout.stack()
-                    .offset('zero')
+                    .offset(stackOffset)
                     .values(function(d){ return d.values })
                     .y(getY)
                 (data);
@@ -86,19 +98,55 @@ nv.models.multiBarHorizontal = function() {
             var seriesData = (xDomain && yDomain) ? [] : // if we know xDomain and yDomain, no need to calculate
                 data.map(function(d) {
                     return d.values.map(function(d,i) {
-                        return { x: getX(d,i), y: getY(d,i), y0: d.y0, y1: d.y1 }
+                        return { x: getX(d,i), y: getY(d,i), y0: d.y0, y1: d.y1, yerr: getYerr(d,i) }
                     })
                 });
 
             x.domain(xDomain || d3.merge(seriesData).map(function(d) { return d.x }))
                 .rangeBands(xRange || [0, availableHeight], groupSpacing);
 
-            y.domain(yDomain || d3.extent(d3.merge(seriesData).map(function(d) { return stacked ? (d.y > 0 ? d.y1 + d.y : d.y1 ) : d.y }).concat(forceY)))
+            y.domain(yDomain || d3.extent(d3.merge(seriesData).map(function(d) {
+                var offsetMax = 0;
+                var offsetMin = 0;
+                if (!(d.yerr === undefined)){
+                    var yerr = d.yerr.length ? d.yerr : [-Math.abs(d.yerr), Math.abs(d.yerr)];
+                    offsetMax = Math.max.apply(null, yerr);
+                    offsetMin = Math.min.apply(null, yerr);
+                }
+                if (stacked){
+                    if (d.y > 0){
+                        return (d.y1 + d.y + (offsetMax > 0 ? offsetMax : 0))
+                    }else{
+                        return (d.y1 + (offsetMin < 0 ? offsetMin : 0))
+                    }
+                }else{
+                    if (d.y > 0){
+                        return (d.y + (offsetMax > 0 ? offsetMax : 0))
+                    }else{
+                        return (d.y + (offsetMin < 0 ? offsetMin : 0))
+                    }
+                }
+            }).concat(forceY)))
+            var offsetRight = 0;
+            var offsetLeft = 0;
+            if (showValues && !stacked) {
+                if (y.domain()[0] < 0)
+                    offsetRight += valuePadding
+                if (y.domain()[1] > 0)
+                    offsetLeft += valuePadding
+            }
+            y.range(yRange || [0 + offsetLeft, availableWidth - offsetRight]);
 
-            if (showValues && !stacked)
-                y.range(yRange || [(y.domain()[0] < 0 ? valuePadding : 0), availableWidth - (y.domain()[1] > 0 ? valuePadding : 0) ]);
-            else
-                y.range(yRange || [0, availableWidth]);
+            // If scale's domain don't have a range, slightly adjust to make one... so a chart can show a single data point
+            if (x.domain()[0] === x.domain()[1])
+                x.domain()[0] ?
+                    x.domain([x.domain()[0] - x.domain()[0] * 0.01, x.domain()[1] + x.domain()[1] * 0.01])
+                    : x.domain([-1,1]);
+
+                if (y.domain()[0] === y.domain()[1])
+                    y.domain()[0] ?
+                        y.domain([y.domain()[0] + y.domain()[0] * 0.01, y.domain()[1] - y.domain()[1] * 0.01])
+                        : y.domain([-1,1]);
 
             x0 = x0 || x;
             y0 = y0 || d3.scale.linear().domain(y.domain()).range([y(0),y(0)]);
@@ -112,6 +160,15 @@ nv.models.multiBarHorizontal = function() {
 
             gEnter.append('g').attr('class', 'nv-groups');
             wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+            defsEnter.append('clipPath')
+                .attr('id', 'nv-edge-clip-' + id)
+                .append('rect');
+            wrap.select('#nv-edge-clip-' + id + ' rect')
+                .attr('width', availableWidth)
+                .attr('height', availableHeight);
+
+            g.attr('clip-path', clipEdge ? 'url(#nv-edge-clip-' + id + ')' : '');
 
             var groups = wrap.select('.nv-groups').selectAll('.nv-group')
                 .data(function(d) { return d }, function(d,i) { return i });
@@ -132,7 +189,7 @@ nv.models.multiBarHorizontal = function() {
                 .style('fill-opacity', .75);
 
             var bars = groups.selectAll('g.nv-bar')
-                .data(function(d) { return d.values });
+                .data(function(d) { return (hideable && !data.length) ? hideable.values : d.values });
             bars.exit().remove();
 
             var barsEnter = bars.enter().append('g')
@@ -142,7 +199,7 @@ nv.models.multiBarHorizontal = function() {
 
             barsEnter.append('rect')
                 .attr('width', 0)
-                .attr('height', x.rangeBand() / (stacked ? 1 : data.length) )
+                .attr('height', x.rangeBand() / (stacked ? 1 : data.length) );
 
             bars
                 .on('mouseover', function(d,i) { //TODO: figure out why j works above, but not here
@@ -195,15 +252,14 @@ nv.models.multiBarHorizontal = function() {
 
             if (getYerr(data[0],0)) {
                 barsEnter.append('polyline');
-
                 bars.select('polyline')
                     .attr('fill', 'none')
                     .attr('points', function(d,i) {
-                        var xerr = getYerr(d,i)
+                        var yerr = getYerr(d,i)
                             , mid = 0.8 * x.rangeBand() / ((stacked ? 1 : data.length) * 2);
-                        xerr = xerr.length ? xerr : [-Math.abs(xerr), Math.abs(xerr)];
-                        xerr = xerr.map(function(e) { return y(e) - y(0); });
-                        var a = [[xerr[0],-mid], [xerr[0],mid], [xerr[0],0], [xerr[1],0], [xerr[1],-mid], [xerr[1],mid]];
+                        yerr = yerr.length ? yerr : [-Math.abs(yerr), Math.abs(yerr)];
+                        yerr = yerr.map(function(e) { return y(e) - y(0); });
+                        var a = [[yerr[0],-mid], [yerr[0],mid], [yerr[0],0], [yerr[1],0], [yerr[1],-mid], [yerr[1],mid]];
                         return a.map(function (path) { return path.join(',') }).join(' ');
                     })
                     .attr('transform', function(d,i) {
@@ -222,32 +278,35 @@ nv.models.multiBarHorizontal = function() {
                     .text(function(d,i) {
                         var t = valueFormat(getY(d,i))
                             , yerr = getYerr(d,i);
-                        if (yerr === undefined)
+                        if (yerr === undefined){
                             return t;
-                        if (!yerr.length)
-                            return t + '±' + valueFormat(Math.abs(yerr));
-                        return t + '+' + valueFormat(Math.abs(yerr[1])) + '-' + valueFormat(Math.abs(yerr[0]));
+                        }else{
+                            if (!yerr.length){
+                                return t + '±' + valueFormat(Math.abs(yerr));
+                            }else if (yerr[0] == yerr[1]){
+                                return t + (yerr[0] > 0 ? '+' : '-') + valueFormat(Math.abs(yerr[0]));
+                            }else{
+                                return t + (yerr[1] > 0 ? '+' : '-') + valueFormat(Math.abs(yerr[1])) + (yerr[0] > 0 ? '+' : '-') + valueFormat(Math.abs(yerr[0]));
+                            }
+                        }
                     });
                 bars.watchTransition(renderWatch, 'multibarhorizontal: bars')
                     .select('text')
-                    .attr('x', function(d,i) { return getY(d,i) < 0 ? -4 : y(getY(d,i)) - y(0) + 4 })
+                    .attr('x', function(d,i) {
+                        var yerr = getYerr(d,i)
+                        var shiftRight = 0;
+                        var shiftLeft = 0;
+                        if (!(yerr === undefined)){
+                            yerr = yerr.length ? yerr : [-Math.abs(yerr), Math.abs(yerr)];
+                            var yerrMax = Math.max.apply(null, yerr);
+                            var yerrMin = Math.min.apply(null, yerr);
+                            shiftRight = (y(yerrMax) - y(0)) > 0 ? y(yerrMax) - y(0) : 0;
+                            shiftLeft = (y(yerrMin) - y(0) < 0 ? y(yerrMin) - y(0) : 0);
+                        }
+                        return getY(d,i) < 0 ? shiftLeft - 5 : y(getY(d,i)) - y(0) + shiftRight + 5
+                    })
             } else {
                 bars.selectAll('text').text('');
-            }
-
-            if (showBarLabels && !stacked) {
-                barsEnter.append('text').classed('nv-bar-label',true);
-                bars.select('text.nv-bar-label')
-                    .attr('text-anchor', function(d,i) { return getY(d,i) < 0 ? 'start' : 'end' })
-                    .attr('y', x.rangeBand() / (data.length * 2))
-                    .attr('dy', '.32em')
-                    .text(function(d,i) { return getX(d,i) });
-                bars.watchTransition(renderWatch, 'multibarhorizontal: bars')
-                    .select('text.nv-bar-label')
-                    .attr('x', function(d,i) { return getY(d,i) < 0 ? y(0) - y(getY(d,i)) + 4 : -4 });
-            }
-            else {
-                bars.selectAll('text.nv-bar-label').text('');
             }
 
             bars
@@ -266,10 +325,10 @@ nv.models.multiBarHorizontal = function() {
                         return 'translate(' + y(d.y1) + ',' + x(getX(d,i)) + ')'
                     })
                     .select('rect')
+                    .attr('height', x.rangeBand() )
                     .attr('width', function(d,i) {
                         return Math.abs(y(getY(d,i) + d.y0) - y(d.y0))
-                    })
-                    .attr('height', x.rangeBand() );
+                    });
             else
                 bars.watchTransition(renderWatch, 'multibarhorizontal: bars')
                     .attr('transform', function(d,i) {
@@ -320,12 +379,13 @@ nv.models.multiBarHorizontal = function() {
         xRange:  {get: function(){return xRange;}, set: function(_){xRange=_;}},
         yRange:  {get: function(){return yRange;}, set: function(_){yRange=_;}},
         forceY:  {get: function(){return forceY;}, set: function(_){forceY=_;}},
-        stacked: {get: function(){return stacked;}, set: function(_){stacked=_;}},
         showValues: {get: function(){return showValues;}, set: function(_){showValues=_;}},
-        // this shows the group name, seems pointless?
-        //showBarLabels:    {get: function(){return showBarLabels;}, set: function(_){showBarLabels=_;}},
+        stacked: {get: function(){return stacked;}, set: function(_){stacked=_;}},
+        stackOffset: {get: function(){return stackOffset;}, set: function(_){stackOffset=_;}},
+        clipEdge:    {get: function(){return clipEdge;}, set: function(_){clipEdge=_;}},
         disabled:     {get: function(){return disabled;}, set: function(_){disabled=_;}},
         id:           {get: function(){return id;}, set: function(_){id=_;}},
+        hideable:    {get: function(){return hideable;}, set: function(_){hideable=_;}},
         valueFormat:  {get: function(){return valueFormat;}, set: function(_){valueFormat=_;}},
         valuePadding: {get: function(){return valuePadding;}, set: function(_){valuePadding=_;}},
         groupSpacing:{get: function(){return groupSpacing;}, set: function(_){groupSpacing=_;}},
