@@ -15,8 +15,8 @@ nv.models.legend = function() {
         , updateState = true   //If true, legend will update data.disabled and trigger a 'stateChange' dispatch.
         , radioButtonMode = false   //If true, clicking legend items will cause it to behave like a radio button. (only one can be selected at a time)
         , dispatch = d3.dispatch('legendClick', 'legendDblclick', 'legendMouseover', 'legendMouseout', 'stateChange')
+        , isTouchable = ("ontouchstart" in window) || ("onmsgesturechange" in window)
         ;
-
     function chart(selection) {
         selection.each(function(data) {
             var availableWidth = width - margin.left - margin.right,
@@ -38,43 +38,38 @@ nv.models.legend = function() {
                 })
                 .on('mouseout', function(d,i) {
                     dispatch.legendMouseout(d,i);
+                });
+            if(isTouchable) {
+                seriesEnter.on("touchstart", function(d,i){
+                    seriesEnter.attr("tap_triggered", "0");
+                    seriesEnter.attr("tap_clicked", "0");
+                    seriesEnter.attr("tap_cancelled", "0");
+                    seriesEnter.attr("tap_timer", setTimeout(function(){
+                        if (seriesEnter.attr("tap_cancelled")==="0" && seriesEnter.attr("tap_clicked")==="0"){
+                            checkItemOnly(d,i,data);
+                            seriesEnter.attr("tap_triggered", "1");
+                        }
+                    }, 1000));  //TODO: Make consistent or option with other event objects
                 })
-                .on('click', function(d,i) {
-                    dispatch.legendClick(d,i);
-                    if (updateState) {
-                        if (radioButtonMode) {
-                            //Radio button mode: set every series to disabled,
-                            //  and enable the clicked series.
-                            data.forEach(function(series) { series.disabled = true});
-                            d.disabled = false;
-                        }
-                        else {
-                            d.disabled = !d.disabled;
-                            if (data.every(function(series) { return series.disabled})) {
-                                //the default behavior of NVD3 legends is, if every single series
-                                // is disabled, turn all series' back on.
-                                data.forEach(function(series) { series.disabled = false});
-                            }
-                        }
-                        dispatch.stateChange({
-                            disabled: data.map(function(d) { return !!d.disabled })
-                        });
+                .on("touchend", function stopHandler(d,i) {
+                    if (seriesEnter.attr("tap_cancelled")==="1") return;
+                    clearTimeout(parseInt(seriesEnter.attr("tap_timer")));
+                    if (seriesEnter.attr("tap_triggered")==="0" && seriesEnter.attr("tap_clicked")==="0") {
+                        seriesEnter.attr("tap_clicked", "1");
+                        toggleItem(d,i,data);
                     }
+                })
+                .on("touchmove", function(d,i) {
+                    seriesEnter.attr("tap_cancelled", "1");
+                });
+            } else {
+                seriesEnter.on('click', function(d,i) {
+                    toggleItem(d,i,data);
                 })
                 .on('dblclick', function(d,i) {
-                    dispatch.legendDblclick(d,i);
-                    if (updateState) {
-                        //the default behavior of NVD3 legends, when double clicking one,
-                        // is to set all other series' to false, and make the double clicked series enabled.
-                        data.forEach(function(series) {
-                            series.disabled = true;
-                        });
-                        d.disabled = false;
-                        dispatch.stateChange({
-                            disabled: data.map(function(d) { return !!d.disabled })
-                        });
-                    }
+                    checkItemOnly(d,i,data);
                 });
+            }
             seriesEnter.append('circle')
                 .style('stroke-width', 2)
                 .attr('class','nv-legend-symbol')
@@ -186,6 +181,44 @@ nv.models.legend = function() {
         });
 
         return chart;
+    }
+    
+    function toggleItem(d,i,data){
+        dispatch.legendClick(d,i);
+        if (updateState) {
+            if (radioButtonMode) {
+                //Radio button mode: set every series to disabled,
+                //  and enable the clicked series.
+                data.forEach(function(series) { series.disabled = true});
+                d.disabled = false;
+            }
+            else {
+                d.disabled = !d.disabled;
+                if (data.every(function(series) { return series.disabled})) {
+                    //the default behavior of NVD3 legends is, if every single series
+                    // is disabled, turn all series' back on.
+                    data.forEach(function(series) { series.disabled = false});
+                }
+            }
+            dispatch.stateChange({
+                disabled: data.map(function(d) { return !!d.disabled })
+            });
+        }
+    }
+    
+    function checkItemOnly(d,i,data){
+        dispatch.legendDblclick(d,i);
+        if (updateState) {
+            //the default behavior of NVD3 legends, when double clicking one,
+            // is to set all other series' to false, and make the double clicked series enabled.
+            data.forEach(function(series) {
+                series.disabled = true;
+            });
+            d.disabled = false;
+            dispatch.stateChange({
+                disabled: data.map(function(d) { return !!d.disabled })
+            });
+        }
     }
 
     //============================================================
