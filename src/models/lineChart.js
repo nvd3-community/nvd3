@@ -252,11 +252,11 @@ nv.models.lineChart = function() {
             
             g.select('.nv-focusWrap').style('display', focusEnable ? 'initial' : 'none');
             
-            if(!focusEnable) {
+          /*  if(!focusEnable) {
                 linesWrap.call(lines);
                 updateXAxis();
                 updateYAxis();
-            } else {
+            } else { */
                 focus.width(availableWidth);
                 g.select('.nv-focusWrap')
                     .attr('transform', 'translate(0,' + ( availableHeight + margin.bottom + focus.margin().top) + ')')
@@ -266,7 +266,7 @@ nv.models.lineChart = function() {
                 if(extent !== null){
                     onBrush(extent);
                 }
-            }
+           // }
             //============================================================
             // Event Handling/Dispatching (in chart's scope)
             //------------------------------------------------------------
