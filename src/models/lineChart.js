@@ -249,6 +249,9 @@ nv.models.lineChart = function() {
             //============================================================
             // Update Focus
             //============================================================
+            
+            g.select('.nv-focusWrap').style('display', focusEnable ? 'initial' : 'none');
+            
             if(!focusEnable) {
                 linesWrap.call(lines);
                 updateXAxis();
