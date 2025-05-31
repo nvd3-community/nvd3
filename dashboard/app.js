@@ -4,13 +4,34 @@
   /* ────────────────────────────────────────
    * 1. Helpers to load data & structure
    * ────────────────────────────────────────*/
+  function excelDateToJSDate(num) {
+    const epoch = Date.UTC(1899, 11, 30);
+    return new Date(epoch + num * 24 * 60 * 60 * 1000);
+  }
+
   function loadData() {
     return fetch('../data/Results_v2 3.xlsx')
       .then((resp) => resp.arrayBuffer())
       .then((buf) => {
-        const workbook = XLSX.read(new Uint8Array(buf), { type: 'array' });
+        const workbook = XLSX.read(new Uint8Array(buf), {
+          type: 'array',
+          cellDates: true,
+        });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        return XLSX.utils.sheet_to_json(sheet);
+        const raw = XLSX.utils.sheet_to_json(sheet, { defval: null });
+        return raw.map((row) => {
+          if (row.Date != null) {
+            if (row.Date instanceof Date) {
+              // use as is
+            } else if (typeof row.Date === 'number') {
+              row.Date = excelDateToJSDate(row.Date);
+            } else {
+              const d = new Date(row.Date);
+              if (!isNaN(d)) row.Date = d;
+            }
+          }
+          return row;
+        });
       });
   }
 
@@ -24,7 +45,10 @@
   function groupBy(arr, key) {
     const map = {};
     arr.forEach((row) => {
-      const k = row[key] ?? 'Unknown';
+      let k = row[key] ?? 'Unknown';
+      if (row[key] instanceof Date) {
+        k = row[key].toISOString().split('T')[0];
+      }
       if (!map[k]) map[k] = [];
       map[k].push(row);
     });
@@ -154,8 +178,8 @@
     const filteredData = useMemo(() => {
       if (data.length === 0) return [];
       return data.filter((row) => {
-        const dateValue = row.Date ? new Date(row.Date) : null;
-        if (!dateValue) return false;
+        const dateValue = row.Date instanceof Date ? row.Date : new Date(row.Date);
+        if (isNaN(dateValue)) return false;
         if (startDate && dateValue < new Date(startDate)) return false;
         if (endDate && dateValue > new Date(endDate)) return false;
         return true;
