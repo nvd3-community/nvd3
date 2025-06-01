@@ -5,7 +5,25 @@
     <title>MMM Dashboard</title>
     <link rel="stylesheet" href="../build/nv.d3.css">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 50px 0 0 0; }
+        .top-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            display: flex;
+        }
+        .top-menu a {
+            color: #fff;
+            margin-right: 15px;
+            text-decoration: none;
+        }
+        .top-menu a:hover {
+            text-decoration: underline;
+        }
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -18,6 +36,10 @@
     </style>
 </head>
 <body>
+    <nav class="top-menu">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/examples/site.html">Ejemplos</a>
+    </nav>
     <div id="root"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>

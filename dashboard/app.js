@@ -10,7 +10,7 @@
   }
 
   function loadData() {
-    return fetch('../data/Results_v2 3.xlsx')
+    return fetch('/api/data')
       .then((resp) => resp.arrayBuffer())
       .then((buf) => {
         const workbook = XLSX.read(new Uint8Array(buf), {
@@ -36,7 +36,7 @@
   }
 
   function loadStructure() {
-    return fetch('../data/structure.json').then((r) => r.json());
+    return fetch('/api/structure').then((r) => r.json());
   }
 
   /* ────────────────────────────────────────
