@@ -92,6 +92,9 @@
       if (!el) return;
       el.innerHTML = '';
 
+      console.log('Chart config:', config);
+      console.log('Chart data:', data);
+
       let chart;
       let chartData = [];
 
