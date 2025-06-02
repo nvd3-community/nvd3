@@ -16,16 +16,5 @@ html, body, iframe {
     //     window.location.href = "https:" + window.location.href.substring(window.location.protocol.length);
 </script>
 <iframe id="mainFrame" src="dashboard/index.html"></iframe>
-<script>
-  // Simple keyboard toggle between dashboard and examples site
-  document.addEventListener('keydown', function(e){
-    if(e.key==='e') {
-      document.getElementById('mainFrame').src = 'examples/site.html';
-    }
-    if(e.key==='d') {
-      document.getElementById('mainFrame').src = 'dashboard/index.html';
-    }
-  });
-</script>
 </body>
 </html>
