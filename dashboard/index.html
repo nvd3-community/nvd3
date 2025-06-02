@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>MMM Dashboard</title>
+    <link rel="stylesheet" href="../build/nv.d3.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 50px 0 0 0; }
+        .top-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            display: flex;
+        }
+        .top-menu a {
+            color: #fff;
+            margin-right: 15px;
+            text-decoration: none;
+        }
+        .top-menu a:hover {
+            text-decoration: underline;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 0 20px;
+        }
+        .chart-container { flex: 1; height: 100%; }
+        .chart-wrapper { display:flex; flex-direction:column; height:400px; }
+        .chart-wrapper h2 { margin: 0 0 10px 0; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+    <nav class="top-menu">
+        <a href="/dashboard">Dashboard</a>
+    </nav>
+    <div id="root"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    <script src="../build/nv.d3.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="/dashboard/app.js"></script>
+</body>
+</html>
