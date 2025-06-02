@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Date",
+    "type": "date"
+  },
+  {
+    "name": "Variable",
+    "type": "category"
+  },
+  {
+    "name": "contribuci\u00f3n",
+    "type": "numeric"
+  },
+  {
+    "name": "Media_costs",
+    "type": "numeric"
+  },
+  {
+    "name": "Grouping",
+    "type": "category"
+  },
+  {
+    "name": "Channel",
+    "type": "category"
+  }
+]
